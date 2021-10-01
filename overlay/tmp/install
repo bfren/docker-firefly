@@ -1,0 +1,85 @@
+#!/bin/sh
+
+set -euo pipefail
+export BF_E=`basename ${0}`
+
+
+#======================================================================================================================
+# Get PHP version.
+#======================================================================================================================
+
+cd /tmp
+
+PHP_VERSION=$(cat PHP_VERSION)
+bf-debug "PHP version ${PHP_VERSION}."
+
+
+#======================================================================================================================
+# Install PHP dependencies.
+#======================================================================================================================
+
+bf-echo "Adding installation dependencies..."
+apk add --no-cache --virtual .install \
+    composer
+bf-done
+
+bf-echo "Adding required PHP modules for v${PHP_VERSION}..."
+apk add --no-cache \
+    php8=${PHP_VERSION} \
+    php8-bcmath=${PHP_VERSION} \
+    php8-curl=${PHP_VERSION} \
+    php8-intl=${PHP_VERSION} \
+    php8-gd=${PHP_VERSION} \
+    php8-ldap=${PHP_VERSION} \
+    php8-mbstring=${PHP_VERSION} \
+    php8-mysqli=${PHP_VERSION} \
+    php8-pdo_mysql=${PHP_VERSION} \
+    php8-xml=${PHP_VERSION} \
+    php8-zip=${PHP_VERSION}
+bf-done
+
+
+#======================================================================================================================
+# Get Firefly III environment variables.
+#======================================================================================================================
+
+SRC=/etc/bf/src
+bf-debug "Source directory: ${SRC}."
+
+FIREFLY=firefly-iii
+FIREFLY_SRC=${SRC}/${FIREFLY}
+bf-debug "Firefly III source directory: ${FIREFLY_SRC}."
+
+FIREFLY_VERSION=$(cat FIREFLY_VERSION)
+bf-debug "Firefly III version ${FIREFLY_VERSION}."
+
+
+#======================================================================================================================
+# Install Firefly III.
+#======================================================================================================================
+
+bf-echo "Installing Firefly III v${FIREFLY_VERSION} into ${FIREFLY_SRC}"
+cd ${SRC}
+composer create-project grumpydictator/firefly-iii --no-dev --prefer-dist ${FIREFLY_SRC} ${FIREFLY_VERSION}
+bf-done
+
+
+#======================================================================================================================
+# Set permissions on source files.
+#======================================================================================================================
+
+bf-echo "Setting permissions on ${FIREFLY_SRC}..."
+bf-ch -o www:www -m 0755 -t d ${FIREFLY_SRC}
+bf-ch -o www:www -m 0644 -t f ${FIREFLY_SRC}
+bf-done
+
+
+#======================================================================================================================
+# Cleanup.
+#======================================================================================================================
+
+bf-debug "Removing /www files."
+rm -f /www/*
+
+bf-debug "Removing installation dependencies."
+apk del .install
