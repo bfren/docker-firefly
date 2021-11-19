@@ -1,4 +1,4 @@
-FROM bfren/nginx-php:php8.0-2.2.17
+FROM bfren/nginx-php:php8.0-3.0.2
 
 ENV \
     # This should be your email address
